@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: #fbfcfa;
+  color: #17211f;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.map-placeholder {
+  background-image:
+    linear-gradient(rgba(31, 122, 105, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 122, 105, 0.16) 1px, transparent 1px);
+  background-size: 26px 26px;
+}

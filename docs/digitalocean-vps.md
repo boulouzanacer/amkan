@@ -198,3 +198,47 @@ npm run db:push
 npm run build
 pm2 restart amkan-web
 ```
+
+## Dépannage: Prisma P1000 MySQL
+
+Si Prisma affiche:
+
+```text
+P1000: Authentication failed against database server
+```
+
+Le mot de passe dans `DATABASE_URL` ne correspond pas au mot de passe MySQL de `amkan_user`. Réinitialiser l'utilisateur:
+
+```bash
+mysql
+```
+
+```sql
+CREATE DATABASE IF NOT EXISTS amkan CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'amkan_user'@'localhost' IDENTIFIED BY 'CHANGE_THIS_PASSWORD';
+ALTER USER 'amkan_user'@'localhost' IDENTIFIED BY 'CHANGE_THIS_PASSWORD';
+GRANT ALL PRIVILEGES ON amkan.* TO 'amkan_user'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+Puis mettre exactement le même mot de passe dans `.env`:
+
+```env
+DATABASE_URL="mysql://amkan_user:CHANGE_THIS_PASSWORD@localhost:3306/amkan"
+```
+
+Tester la connexion:
+
+```bash
+mysql -u amkan_user -p amkan
+```
+
+Si le test fonctionne:
+
+```bash
+npm run db:push
+npm run db:seed
+npm run build
+pm2 restart amkan-web
+```

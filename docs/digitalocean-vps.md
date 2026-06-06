@@ -137,7 +137,7 @@ npm run build
 
 ```bash
 npm install -g pm2
-pm2 start npm --name amkan-web --cwd /var/www/amkan -- run start -- --hostname 127.0.0.1 --port 3000
+pm2 start ecosystem.config.cjs
 pm2 save
 pm2 startup systemd
 ```
@@ -196,7 +196,7 @@ cp .env apps/web/.env.production
 npm run db:generate
 npm run db:push
 npm run build
-pm2 restart amkan-web
+pm2 restart amkan-web --update-env
 ```
 
 ## Dépannage: PM2 process not found
@@ -211,7 +211,8 @@ Le process n'existe pas encore. Lancer le premier démarrage:
 
 ```bash
 cd /var/www/amkan
-pm2 start npm --name amkan-web --cwd /var/www/amkan -- run start -- --hostname 127.0.0.1 --port 3000
+pm2 delete amkan-web || true
+pm2 start ecosystem.config.cjs
 pm2 list
 pm2 save
 ```
@@ -228,6 +229,21 @@ Voir les logs:
 
 ```bash
 pm2 logs amkan-web --lines 80
+```
+
+Si PM2 affiche `online` mais que `curl -I http://127.0.0.1:3000` ne répond pas, relancer avec la config directe:
+
+```bash
+cd /var/www/amkan
+pm2 delete amkan-web || true
+cp .env apps/web/.env.production
+npm run build
+pm2 start ecosystem.config.cjs
+sleep 5
+pm2 list
+pm2 logs amkan-web --lines 40
+curl -I http://127.0.0.1:3000
+pm2 save
 ```
 
 ## Dépannage: Prisma P1000 MySQL
@@ -271,5 +287,5 @@ Si le test fonctionne:
 npm run db:push
 npm run db:seed
 npm run build
-pm2 restart amkan-web
+pm2 restart amkan-web --update-env
 ```

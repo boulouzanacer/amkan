@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bookingSchema } from "@/lib/validators";
 import { getCurrentUser } from "@/lib/auth";
+import { notifyUser } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
       serviceFee,
       taxes,
       total,
-      status: payload.data.method === "CASH" ? "PENDING" : "CONFIRMED",
+      status: "PENDING",
       payment: {
         create: {
           amount: total,
@@ -69,7 +70,20 @@ export async function POST(request: Request) {
         }
       }
     },
-    include: { payment: true }
+    include: { payment: true, listing: true }
+  });
+
+  await notifyUser({
+    userId: booking.listing.hostId,
+    title: "Nouvelle demande de réservation",
+    body: `${user.name} a demandé ${booking.nights} nuit(s) pour ${booking.listing.title}.`,
+    actionUrl: "/host/bookings"
+  });
+  await notifyUser({
+    userId: user.id,
+    title: "Demande de réservation envoyée",
+    body: `Votre demande pour ${booking.listing.title} est en attente de confirmation.`,
+    actionUrl: "/traveler/bookings"
   });
 
   return NextResponse.json(booking, { status: 201 });

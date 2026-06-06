@@ -1,4 +1,5 @@
 import { PrismaClient, ListingType, Role } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -11,6 +12,7 @@ const images = [
 ];
 
 async function main() {
+  const passwordHash = await bcrypt.hash("Amkan123!", 12);
   const amenities = await Promise.all(
     ["Wi-Fi", "Parking", "Piscine", "Climatisation", "Cuisine", "TV", "Animaux acceptés"].map((name) =>
       prisma.amenity.upsert({
@@ -37,6 +39,7 @@ async function main() {
     create: {
       email: "host@amkan.test",
       name: "Nora Benali",
+      passwordHash,
       role: Role.HOST,
       bio: "Hôte passionnée par les séjours lumineux, calmes et bien préparés."
     }
@@ -45,7 +48,13 @@ async function main() {
   await prisma.user.upsert({
     where: { email: "admin@amkan.test" },
     update: {},
-    create: { email: "admin@amkan.test", name: "Admin Amkan", role: Role.ADMIN }
+    create: { email: "admin@amkan.test", name: "Admin Amkan", passwordHash, role: Role.ADMIN }
+  });
+
+  await prisma.user.upsert({
+    where: { email: "traveler@amkan.test" },
+    update: {},
+    create: { email: "traveler@amkan.test", name: "Voyageur Amkan", passwordHash, role: Role.TRAVELER }
   });
 
   const samples = [

@@ -1,13 +1,30 @@
 import { CalendarDays, Download, Grip, Upload } from "lucide-react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { calendarDays } from "@/lib/premium-data";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { CalendarManager } from "@/components/calendar-manager";
 
 const links = [["Dashboard", "/host/dashboard"], ["Mes logements", "/host/listings"], ["Ajouter", "/host/listings/new"], ["Calendrier", "/host/calendar"], ["Analytics", "/host/analytics"], ["Réservations", "/host/bookings"]];
 
-export default function HostCalendarPage() {
+export const dynamic = "force-dynamic";
+
+export default async function HostCalendarPage() {
+  const user = await getCurrentUser();
+  const listings = user ? await prisma.listing.findMany({ where: { hostId: user.id }, select: { id: true, title: true } }) : [];
+  const availability = listings.length
+    ? await prisma.availability.findMany({
+        where: { listingId: { in: listings.map((listing) => listing.id) } },
+        include: { listing: true },
+        orderBy: { date: "asc" },
+        take: 30
+      })
+    : [];
+
   return (
     <DashboardShell title="Espace hôte" links={links}>
       <div className="grid gap-5">
+        {listings.length ? <CalendarManager listings={listings} /> : <p className="rounded-md border border-ink/10 bg-white p-4 text-sm text-ink/60">Ajoutez un logement avant de gérer le calendrier.</p>}
         <section className="rounded-md border border-ink/10 bg-white p-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -33,6 +50,19 @@ export default function HostCalendarPage() {
                 <p className="mt-1 text-xs text-ink/55">{day.weekend ? "Weekend" : "Semaine"} · {day.status}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="rounded-md border border-ink/10 bg-white p-5">
+          <h2 className="text-lg font-semibold">Disponibilités enregistrées</h2>
+          <div className="mt-4 grid gap-2">
+            {availability.map((item) => (
+              <div key={item.id} className="flex items-center justify-between rounded-md bg-mist p-3 text-sm">
+                <span>{item.listing.title} · {item.date.toLocaleDateString("fr-FR")}</span>
+                <span className="font-semibold">{item.isBlocked ? "Bloqué" : "Ouvert"} {item.price ? `· ${Number(item.price)} EUR` : ""}</span>
+              </div>
+            ))}
+            {!availability.length ? <p className="text-sm text-ink/60">Aucune règle enregistrée.</p> : null}
           </div>
         </section>
 

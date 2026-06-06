@@ -53,6 +53,7 @@ export function BookingForm({ listingId, price, serviceFee = 18, taxes = 12 }: {
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState("2");
+  const [method, setMethod] = useState<"CASH" | "STRIPE">("CASH");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -71,23 +72,46 @@ export function BookingForm({ listingId, price, serviceFee = 18, taxes = 12 }: {
       return;
     }
     setLoading(true);
-    const response = await fetch("/api/bookings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ listingId, checkIn, checkOut, guests: Number(guests), method: "CASH" })
-    });
-    setLoading(false);
-    if (response.status === 401) {
-      router.push("/login");
-      return;
+    try {
+      const response = await fetch("/api/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listingId, checkIn, checkOut, guests: Number(guests), method })
+      });
+      if (response.status === 401) {
+        router.push("/login");
+        return;
+      }
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        setError(body.error ?? "Réservation impossible.");
+        return;
+      }
+      const booking = await response.json();
+      if (method === "STRIPE") {
+        const stripeResponse = await fetch("/api/stripe/create-checkout-session", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookingId: booking.id })
+        });
+        if (!stripeResponse.ok) {
+          const body = await stripeResponse.json().catch(() => ({}));
+          setError(body.error ?? "Stripe n'est pas encore configuré. La réservation reste en attente.");
+          return;
+        }
+        const checkout = await stripeResponse.json();
+        if (checkout.url) {
+          window.location.href = checkout.url;
+          return;
+        }
+        setError("Stripe n'a pas retourné de page de paiement. La réservation reste en attente.");
+        return;
+      }
+      router.push("/traveler/bookings");
+      router.refresh();
+    } finally {
+      setLoading(false);
     }
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      setError(body.error ?? "Réservation impossible.");
-      return;
-    }
-    router.push("/traveler/bookings");
-    router.refresh();
   }
 
   return (
@@ -96,9 +120,16 @@ export function BookingForm({ listingId, price, serviceFee = 18, taxes = 12 }: {
         <label className="grid gap-2 text-sm font-medium">Arrivée<input value={checkIn} onChange={(event) => setCheckIn(event.target.value)} type="date" className="min-h-11 rounded-md border border-ink/10 px-3" required /></label>
         <label className="grid gap-2 text-sm font-medium">Départ<input value={checkOut} onChange={(event) => setCheckOut(event.target.value)} type="date" className="min-h-11 rounded-md border border-ink/10 px-3" required /></label>
         <label className="grid gap-2 text-sm font-medium">Voyageurs<input value={guests} onChange={(event) => setGuests(event.target.value)} type="number" min="1" className="min-h-11 rounded-md border border-ink/10 px-3" /></label>
+        <label className="grid gap-2 text-sm font-medium">
+          Paiement
+          <select value={method} onChange={(event) => setMethod(event.target.value as "CASH" | "STRIPE")} className="min-h-11 rounded-md border border-ink/10 px-3">
+            <option value="CASH">Cash / manuel</option>
+            <option value="STRIPE">Carte bancaire Stripe</option>
+          </select>
+        </label>
         {error ? <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
         <button disabled={loading} className="min-h-12 rounded-md bg-clay px-4 font-semibold text-white hover:bg-palm disabled:opacity-60">
-          {loading ? "Réservation..." : "Réserver en cash"}
+          {loading ? "Réservation..." : method === "STRIPE" ? "Payer et réserver" : "Réserver en cash"}
         </button>
       </form>
       <div className="mt-5 grid gap-2 text-sm">

@@ -52,3 +52,11 @@ Le projet ne réutilise ni nom, ni logo, ni textes protégés, ni interface exac
 ## Modules premium
 
 Le dossier `docs/premium-audit.md` décrit les fonctionnalités avancées ajoutées: assistant hôte, calendrier professionnel, analytics, collections favoris, centre notifications, KYC, sécurité, admin opérations, SEO et mobile premium.
+
+## Comptes de test seed
+
+Après `npm run db:seed`, vous pouvez tester:
+
+- `admin@amkan.test` / `Amkan123!`
+- `host@amkan.test` / `Amkan123!`
+- `traveler@amkan.test` / `Amkan123!`

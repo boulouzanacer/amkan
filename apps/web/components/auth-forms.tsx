@@ -2,10 +2,17 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+
+function safeCallbackUrl(value: string | null) {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) return "/profile";
+  return value;
+}
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +31,7 @@ export function LoginForm() {
       setError("Email ou mot de passe incorrect.");
       return;
     }
-    router.push("/profile");
+    router.push(callbackUrl);
     router.refresh();
   }
 
@@ -39,8 +46,8 @@ export function LoginForm() {
         </button>
       </form>
       <div className="mt-4 grid gap-2">
-        <button onClick={() => signIn("google", { callbackUrl: "/profile" })} className="min-h-11 rounded-md border border-ink/10 font-semibold">Continuer avec Google</button>
-        <button onClick={() => signIn("facebook", { callbackUrl: "/profile" })} className="min-h-11 rounded-md border border-ink/10 font-semibold">Continuer avec Facebook</button>
+        <button onClick={() => signIn("google", { callbackUrl })} className="min-h-11 rounded-md border border-ink/10 font-semibold">Continuer avec Google</button>
+        <button onClick={() => signIn("facebook", { callbackUrl })} className="min-h-11 rounded-md border border-ink/10 font-semibold">Continuer avec Facebook</button>
       </div>
     </>
   );

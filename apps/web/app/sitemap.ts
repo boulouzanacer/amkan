@@ -1,8 +1,9 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
+import { getRequestBaseUrl } from "@/lib/url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const baseUrl = getRequestBaseUrl();
   const staticRoutes = ["", "/search", "/favorites", "/login", "/register", "/host/dashboard"];
   const listings = await prisma.listing.findMany({
     where: { isPublished: true },

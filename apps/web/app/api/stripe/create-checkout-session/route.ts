@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { getRequestBaseUrl } from "@/lib/url";
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
   if (booking.userId !== user.id && user.role !== "ADMIN") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const secretKey = process.env.STRIPE_SECRET_KEY;
+  const baseUrl = getRequestBaseUrl(request);
 
   if (!secretKey) {
     return NextResponse.json({ error: "Stripe is not configured" }, { status: 501 });
@@ -38,8 +40,8 @@ export async function POST(request: Request) {
       }
     ],
     metadata: { bookingId: booking.id },
-    success_url: `${process.env.NEXTAUTH_URL}/payment/success?bookingId=${booking.id}`,
-    cancel_url: `${process.env.NEXTAUTH_URL}/payment/cancel?bookingId=${booking.id}`
+    success_url: `${baseUrl}/payment/success?bookingId=${booking.id}`,
+    cancel_url: `${baseUrl}/payment/cancel?bookingId=${booking.id}`
   });
 
   await prisma.payment.update({

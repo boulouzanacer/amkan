@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Heart, Menu, MessageCircle, UserRound } from "lucide-react";
+import { Bell, Heart, Menu, MessageCircle, ShieldCheck, UserRound } from "lucide-react";
 
 const nav = [
   ["Explorer", "/search"],
@@ -23,6 +23,9 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
+          <Link href="/notifications" aria-label="Notifications" className="grid h-10 w-10 place-items-center rounded-md hover:bg-mist">
+            <Bell className="h-5 w-5" />
+          </Link>
           <Link href="/favorites" aria-label="Favoris" className="grid h-10 w-10 place-items-center rounded-md hover:bg-mist">
             <Heart className="h-5 w-5" />
           </Link>
@@ -31,6 +34,9 @@ export function SiteHeader() {
           </Link>
           <Link href="/profile" aria-label="Profil" className="grid h-10 w-10 place-items-center rounded-md hover:bg-mist">
             <UserRound className="h-5 w-5" />
+          </Link>
+          <Link href="/security" aria-label="Sécurité" className="hidden h-10 w-10 place-items-center rounded-md hover:bg-mist sm:grid">
+            <ShieldCheck className="h-5 w-5" />
           </Link>
           <button aria-label="Menu" className="grid h-10 w-10 place-items-center rounded-md border border-ink/10 md:hidden">
             <Menu className="h-5 w-5" />

@@ -1,4 +1,4 @@
-import { Filter, MapPinned, SlidersHorizontal } from "lucide-react";
+import { Filter, MapPinned, Search, SlidersHorizontal } from "lucide-react";
 import { ListingCard } from "@/components/listing-card";
 import { listings, amenities } from "@/lib/mock-data";
 
@@ -11,6 +11,13 @@ export default function SearchPage() {
           <h1 className="text-xl font-semibold">Filtres</h1>
         </div>
         <div className="mt-5 grid gap-4">
+          <label className="grid gap-2 text-sm font-medium">
+            Recherche intelligente
+            <div className="flex min-h-11 items-center gap-2 rounded-md border border-ink/10 px-3">
+              <Search className="h-4 w-4 text-palm" />
+              <input className="w-full outline-none" placeholder="Quartier, point d'intérêt, correction auto" />
+            </div>
+          </label>
           {["Ville, pays ou adresse", "Prix maximum", "Type de logement", "Chambres", "Voyageurs"].map((label) => (
             <label key={label} className="grid gap-2 text-sm font-medium">
               {label}
@@ -20,7 +27,7 @@ export default function SearchPage() {
           <div>
             <p className="mb-2 text-sm font-medium">Équipements</p>
             <div className="grid gap-2">
-              {amenities.map((amenity) => (
+              {[...amenities, "Jacuzzi", "Front de mer", "Vue montagne", "Accessible PMR", "Télétravail", "Recharge voiture électrique"].map((amenity) => (
                 <label key={amenity} className="flex items-center gap-2 text-sm text-ink/70">
                   <input type="checkbox" className="h-4 w-4 accent-palm" />
                   {amenity}
@@ -60,8 +67,16 @@ export default function SearchPage() {
           <div className="map-placeholder sticky top-24 hidden h-[620px] rounded-md border border-ink/10 bg-mist p-5 xl:block">
             <div className="rounded-md bg-white p-4 shadow-sm">
               <MapPinned className="mb-2 h-6 w-6 text-palm" />
-              <p className="font-semibold">Carte Google Maps</p>
-              <p className="mt-1 text-sm text-ink/60">Brancher `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` pour afficher les marqueurs dynamiques.</p>
+              <p className="font-semibold">Carte interactive</p>
+              <p className="mt-1 text-sm text-ink/60">Clustering, prix sur carte, zoom intelligent et recherche dans la zone visible.</p>
+              <div className="mt-4 grid gap-2">
+                {listings.map((listing) => (
+                  <div key={listing.id} className="flex items-center justify-between rounded-md bg-mist px-3 py-2 text-sm">
+                    <span>{listing.city}</span>
+                    <span className="font-semibold">{listing.price} EUR</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

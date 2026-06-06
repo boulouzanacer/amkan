@@ -48,3 +48,7 @@ docs          Notes de déploiement
 ## Notes produit
 
 Le projet ne réutilise ni nom, ni logo, ni textes protégés, ni interface exacte d'une plateforme existante. L'identité visuelle repose sur une palette propre à Amkan, avec une expérience claire, premium et responsive.
+
+## Modules premium
+
+Le dossier `docs/premium-audit.md` décrit les fonctionnalités avancées ajoutées: assistant hôte, calendrier professionnel, analytics, collections favoris, centre notifications, KYC, sécurité, admin opérations, SEO et mobile premium.

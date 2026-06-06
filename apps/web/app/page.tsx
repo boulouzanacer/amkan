@@ -5,8 +5,20 @@ import { SearchBar } from "@/components/search-bar";
 import { ButtonLink, SectionHeader } from "@/components/ui";
 
 export default function HomePage() {
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "Amkan",
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://amkan.example/search?destination={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   return (
     <main>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <section className="relative min-h-[620px] overflow-hidden bg-ink">
         <Image
           src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1800&q=85"

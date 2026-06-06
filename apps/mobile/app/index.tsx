@@ -31,6 +31,19 @@ export default function HomeScreen() {
       </View>
       <View style={styles.section}>
         <Text style={styles.title}>Logements</Text>
+        <View style={styles.quickLinks}>
+          {[
+            ["Favoris", "/favorites"],
+            ["Messages", "/messages"],
+            ["Hôte", "/host"],
+            ["Carte", "/map"],
+            ["Notifications", "/notifications"]
+          ].map(([label, href]) => (
+            <Link key={label} href={href as never} asChild>
+              <Pressable style={styles.quickLink}><Text style={styles.quickLinkText}>{label}</Text></Pressable>
+            </Link>
+          ))}
+        </View>
         {listings.map(([title, place, price]) => (
           <Link key={title} href="/listing" asChild>
             <Pressable style={styles.card}>
@@ -58,6 +71,9 @@ const styles = StyleSheet.create({
   buttonText: { color: "white", fontWeight: "700" },
   section: { padding: 16 },
   title: { fontSize: 24, fontWeight: "700", color: "#17211f", marginBottom: 12 },
+  quickLinks: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 12 },
+  quickLink: { borderWidth: 1, borderColor: "#dfe7e3", borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: "white" },
+  quickLinkText: { color: "#17211f", fontWeight: "700" },
   card: { backgroundColor: "white", borderRadius: 8, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: "#e5ece8" },
   cardTitle: { fontSize: 17, fontWeight: "700", color: "#17211f" },
   muted: { marginTop: 4, color: "#61716c" },

@@ -1,7 +1,7 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { listings } from "@/lib/mock-data";
 
-const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"]];
+const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"], ["Opérations", "/admin/operations"]];
 
 export default function AdminListingsPage() {
   return (

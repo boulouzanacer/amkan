@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 
-const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"]];
+const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"], ["Opérations", "/admin/operations"]];
 
 export default function AdminUsersPage() {
   return (

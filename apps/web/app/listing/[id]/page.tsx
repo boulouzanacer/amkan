@@ -90,6 +90,17 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
             <div className="mt-3 rounded-md border border-ink/10 bg-white p-5">
               <Rating value={listing.rating} count={listing.reviews} />
               <p className="mt-3 text-ink/70">Logement très propre, arrivée simple et hôte réactif. Une base parfaite pour explorer la région.</p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-5">
+                {["Propreté", "Emplacement", "Communication", "Qualité-prix", "Exactitude"].map((label) => (
+                  <div key={label} className="rounded-md bg-mist p-3 text-sm">
+                    <p className="font-semibold">4.8</p>
+                    <p className="text-ink/60">{label}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 rounded-md border border-ink/10 p-3 text-sm text-ink/70">
+                Réponse hôte: merci pour votre retour, nous avons amélioré le guide d&apos;arrivée.
+              </div>
             </div>
           </div>
         </section>

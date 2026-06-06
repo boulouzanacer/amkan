@@ -11,7 +11,10 @@ export default function MessagesPage() {
         ))}
       </aside>
       <section className="rounded-md border border-ink/10 bg-white p-5">
-        <h2 className="font-semibold">Conversation</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Conversation temps réel</h2>
+          <span className="rounded-md bg-mist px-3 py-1 text-xs font-semibold text-palm">WebSocket prêt</span>
+        </div>
         <div className="mt-5 grid gap-3">
           <p className="w-fit max-w-xl rounded-md bg-mist p-3 text-sm">Bonjour, le logement est-il disponible pour une arrivée tardive ?</p>
           <p className="ml-auto w-fit max-w-xl rounded-md bg-palm p-3 text-sm text-white">Oui, nous pouvons organiser une arrivée autonome.</p>
@@ -20,6 +23,14 @@ export default function MessagesPage() {
           <input placeholder="Écrire un message" className="min-h-12 flex-1 rounded-md border border-ink/10 px-4" />
           <button className="rounded-md bg-ink px-5 font-semibold text-white">Envoyer</button>
         </form>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {["Arrivée autonome possible", "Merci pour votre réservation", "Je vérifie la disponibilité"].map((reply) => (
+            <button key={reply} className="rounded-md border border-ink/10 px-3 py-2 text-sm">{reply}</button>
+          ))}
+          <button className="rounded-md border border-ink/10 px-3 py-2 text-sm">Ajouter image</button>
+          <button className="rounded-md border border-ink/10 px-3 py-2 text-sm">Ajouter document</button>
+          <button className="rounded-md border border-ink/10 px-3 py-2 text-sm">Traduire</button>
+        </div>
       </section>
     </main>
   );

@@ -43,6 +43,55 @@ enum PaymentMethod {
   STRIPE
 }
 
+enum DraftStatus {
+  DRAFT
+  READY
+  PUBLISHED
+}
+
+enum CalendarProvider {
+  AIRBNB
+  BOOKING
+  GOOGLE
+  CUSTOM
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum VerificationDocumentType {
+  ID_CARD
+  PASSPORT
+  SELFIE
+  PHONE
+  EMAIL
+}
+
+enum ReportStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum DisputeStatus {
+  OPEN
+  MEDIATION
+  REFUNDED
+  CLOSED
+}
+
 model User {
   id             String         @id @default(cuid())
   name           String
@@ -56,10 +105,18 @@ model User {
   bookings       Booking[]
   reviews        Review[]
   favorites      Favorite[]
+  favoriteCollections FavoriteCollection[]
   sentMessages   Message[]      @relation("SentMessages")
   conversationsAsTraveler Conversation[] @relation("TravelerConversations")
   conversationsAsHost     Conversation[] @relation("HostConversations")
   notifications  Notification[]
+  listingDrafts  ListingDraft[]
+  hostVerification HostVerification?
+  twoFactorCredential TwoFactorCredential?
+  loginEvents    LoginEvent[]
+  reports        Report[]
+  disputes       Dispute[]
+  payouts        Payout[]
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 }
@@ -80,11 +137,21 @@ model Listing {
   serviceFee    Decimal       @default(0) @db.Decimal(10, 2)
   taxes         Decimal       @default(0) @db.Decimal(10, 2)
   type          ListingType
+  status        DraftStatus   @default(PUBLISHED)
   guests        Int
   bedrooms      Int
   beds          Int
   bathrooms     Int
   houseRules    String        @db.Text
+  seoTitle      String?
+  seoDescription String?      @db.Text
+  videoUrl      String?       @db.Text
+  youtubeUrl    String?       @db.Text
+  tour360Url    String?       @db.Text
+  checkInInstructions String? @db.Text
+  wifiInfo      String?       @db.Text
+  parkingInfo   String?       @db.Text
+  accessCode    String?
   isPublished   Boolean       @default(true)
   images        ListingImage[]
   categories    ListingCategory[]
@@ -92,13 +159,36 @@ model Listing {
   bookings      Booking[]
   reviews       Review[]
   favorites     Favorite[]
+  favoriteCollectionItems FavoriteCollectionItem[]
   availability  Availability[]
+  pricingRules  PricingRule[]
+  calendarSyncs CalendarSync[]
+  metrics       ListingMetric[]
   conversations Conversation[]
+  reports       Report[]
+  disputes      Dispute[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
   @@index([city, country])
   @@index([pricePerNight])
+}
+
+model ListingDraft {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStep     Int         @default(1)
+  status          DraftStatus @default(DRAFT)
+  completionScore Int         @default(0)
+  missingFields   Json?
+  payload         Json
+  preview         Json?
+  aiDescription   String?     @db.Text
+  seoSuggestions  Json?
+  priceSuggestion Decimal?    @db.Decimal(10, 2)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 model ListingImage {
@@ -159,6 +249,7 @@ model Booking {
   status      BookingStatus @default(PENDING)
   payment     Payment?
   review      Review?
+  disputes    Dispute[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -170,9 +261,14 @@ model Payment {
   bookingId      String        @unique
   booking        Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   amount         Decimal       @db.Decimal(10, 2)
+  commission     Decimal       @default(0) @db.Decimal(10, 2)
+  hostAmount     Decimal       @default(0) @db.Decimal(10, 2)
   method         PaymentMethod @default(CASH)
   status         PaymentStatus @default(CASH_DUE)
   providerRef    String?
+  stripeAccountId String?
+  refunds        Refund[]
+  invoice        Invoice?
   createdAt      DateTime      @default(now())
 }
 
@@ -185,7 +281,24 @@ model Review {
   listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
   booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   rating    Int
+  cleanliness Int?
+  location    Int?
+  communication Int?
+  value       Int?
+  accuracy    Int?
   comment   String   @db.Text
+  hostResponse String? @db.Text
+  hostRespondedAt DateTime?
+  photos    ReviewPhoto[]
+  createdAt DateTime @default(now())
+}
+
+model ReviewPhoto {
+  id        String   @id @default(cuid())
+  reviewId  String
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  url       String   @db.Text
+  alt       String?
   createdAt DateTime @default(now())
 }
 
@@ -198,6 +311,31 @@ model Favorite {
   createdAt DateTime @default(now())
 
   @@unique([userId, listingId])
+}
+
+model FavoriteCollection {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  isShared  Boolean  @default(false)
+  shareToken String? @unique
+  notes     String?  @db.Text
+  items     FavoriteCollectionItem[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FavoriteCollectionItem {
+  id           String   @id @default(cuid())
+  collectionId String
+  listingId    String
+  privateNote  String?  @db.Text
+  collection   FavoriteCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  listing      Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+
+  @@unique([collectionId, listingId])
 }
 
 model Conversation {
@@ -220,8 +358,31 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   sender         User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
   body           String       @db.Text
+  translatedBody String?      @db.Text
+  language       String?
   readAt         DateTime?
+  attachments    MessageAttachment[]
   createdAt      DateTime     @default(now())
+}
+
+model MessageAttachment {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  url       String   @db.Text
+  mimeType  String
+  fileName  String
+  createdAt DateTime @default(now())
+}
+
+model QuickReply {
+  id        String   @id @default(cuid())
+  hostId    String
+  title     String
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([hostId])
 }
 
 model Availability {
@@ -235,12 +396,156 @@ model Availability {
   @@unique([listingId, date])
 }
 
+model PricingRule {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  name      String
+  startsAt  DateTime
+  endsAt    DateTime
+  price     Decimal  @db.Decimal(10, 2)
+  minNights Int      @default(1)
+  isWeekend Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model CalendarSync {
+  id        String           @id @default(cuid())
+  listingId String
+  listing   Listing          @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  provider  CalendarProvider
+  importUrl String?          @db.Text
+  exportToken String         @unique
+  lastSyncedAt DateTime?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+model ListingMetric {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  date      DateTime
+  views     Int      @default(0)
+  favorites Int      @default(0)
+  bookings  Int      @default(0)
+  cancellations Int  @default(0)
+  conversionRate Decimal @default(0) @db.Decimal(5, 2)
+  occupancyRate  Decimal @default(0) @db.Decimal(5, 2)
+
+  @@unique([listingId, date])
+}
+
 model Notification {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   body      String   @db.Text
+  channel   NotificationChannel @default(IN_APP)
+  actionUrl String?
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model LoginEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress String?
+  userAgent String?  @db.Text
+  location  String?
+  isSuspicious Boolean @default(false)
+  createdAt DateTime @default(now())
+}
+
+model TwoFactorCredential {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  secret    String
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HostVerification {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    VerificationStatus @default(UNVERIFIED)
+  notes     String?  @db.Text
+  documents VerificationDocument[]
+  submittedAt DateTime?
+  reviewedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationDocument {
+  id        String   @id @default(cuid())
+  verificationId String
+  verification HostVerification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+  type      VerificationDocumentType
+  url       String   @db.Text
+  status    VerificationStatus @default(PENDING)
+  createdAt DateTime @default(now())
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  reason    String
+  details   String   @db.Text
+  status    ReportStatus @default(OPEN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Dispute {
+  id        String   @id @default(cuid())
+  userId    String
+  listingId String?
+  bookingId String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  booking   Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  reason    String
+  status    DisputeStatus @default(OPEN)
+  resolution String? @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payout {
+  id        String   @id @default(cuid())
+  hostId    String
+  host      User     @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(10, 2)
+  currency  String   @default("EUR")
+  status    PaymentStatus @default(PENDING)
+  providerRef String?
+  createdAt DateTime @default(now())
+}
+
+model Refund {
+  id        String   @id @default(cuid())
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  amount    Decimal  @db.Decimal(10, 2)
+  reason    String
+  providerRef String?
+  createdAt DateTime @default(now())
+}
+
+model Invoice {
+  id        String   @id @default(cuid())
+  paymentId String   @unique
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  number    String   @unique
+  pdfUrl    String?  @db.Text
+  issuedAt  DateTime @default(now())
 }

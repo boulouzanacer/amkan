@@ -1,6 +1,6 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 
-const links = [["Dashboard", "/host/dashboard"], ["Mes logements", "/host/listings"], ["Ajouter", "/host/listings/new"], ["Réservations", "/host/bookings"]];
+const links = [["Dashboard", "/host/dashboard"], ["Mes logements", "/host/listings"], ["Ajouter", "/host/listings/new"], ["Calendrier", "/host/calendar"], ["Analytics", "/host/analytics"], ["Réservations", "/host/bookings"]];
 
 export default function HostBookingsPage() {
   return (

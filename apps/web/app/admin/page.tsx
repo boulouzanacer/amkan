@@ -1,7 +1,7 @@
 import { DashboardShell } from "@/components/dashboard-shell";
 import { stats } from "@/lib/mock-data";
 
-const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"]];
+const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"], ["Opérations", "/admin/operations"]];
 
 export default function AdminPage() {
   return (
@@ -17,6 +17,14 @@ export default function AdminPage() {
       <div className="mt-6 rounded-md border border-ink/10 bg-white p-5">
         <h2 className="text-xl font-semibold">Modération</h2>
         <p className="mt-2 text-ink/65">Gérer comptes, logements, réservations, paiements et avis signalés depuis cet espace.</p>
+      </div>
+      <div className="mt-6 grid gap-4 md:grid-cols-4">
+        {["Vérification annonces", "KYC hôtes", "Signalements", "Litiges"].map((item) => (
+          <div key={item} className="rounded-md border border-ink/10 bg-white p-4">
+            <p className="font-semibold">{item}</p>
+            <p className="mt-2 text-sm text-ink/60">File opérationnelle prête pour workflow admin.</p>
+          </div>
+        ))}
       </div>
     </DashboardShell>
   );

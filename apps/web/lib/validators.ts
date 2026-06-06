@@ -38,3 +38,45 @@ export const messageSchema = z.object({
   listingId: z.string().optional(),
   body: z.string().min(1)
 });
+
+export const listingDraftSchema = z.object({
+  userId: z.string(),
+  currentStep: z.coerce.number().int().min(1).max(8).default(1),
+  status: z.enum(["DRAFT", "READY", "PUBLISHED"]).default("DRAFT"),
+  payload: z.record(z.unknown()).default({}),
+  preview: z.record(z.unknown()).optional(),
+  missingFields: z.array(z.string()).default([])
+});
+
+export const pricingSuggestionSchema = z.object({
+  city: z.string().min(2),
+  season: z.enum(["low", "mid", "high"]).default("mid"),
+  guests: z.coerce.number().int().positive(),
+  category: z.string().min(2)
+});
+
+export const calendarBlockSchema = z.object({
+  listingId: z.string(),
+  date: z.coerce.date(),
+  isBlocked: z.boolean().default(false),
+  price: z.coerce.number().positive().optional()
+});
+
+export const favoriteCollectionSchema = z.object({
+  userId: z.string(),
+  name: z.string().min(2),
+  isShared: z.boolean().default(false),
+  notes: z.string().optional()
+});
+
+export const verificationSchema = z.object({
+  userId: z.string(),
+  documents: z
+    .array(
+      z.object({
+        type: z.enum(["ID_CARD", "PASSPORT", "SELFIE", "PHONE", "EMAIL"]),
+        url: z.string().url()
+      })
+    )
+    .default([])
+});

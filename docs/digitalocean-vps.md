@@ -32,7 +32,20 @@ ufw allow 'Nginx Full'
 ufw --force enable
 ```
 
-## 5. Base MySQL
+## 5. Swap pour petit VPS
+
+Sur un VPS 1 Go RAM, `npm ci` ou `next build` peut être tué avec `Killed`. Ajouter un swap évite ce blocage.
+
+```bash
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+free -h
+```
+
+## 6. Base MySQL
 
 ```bash
 mysql
@@ -48,17 +61,27 @@ FLUSH PRIVILEGES;
 EXIT;
 ```
 
-## 6. Cloner et installer l'application
+## 7. Cloner et installer l'application web
+
+Le monorepo contient aussi une app mobile Expo. Sur le VPS web, installer uniquement la racine + `apps/web` évite de télécharger les dépendances React Native inutiles en production serveur.
 
 ```bash
 mkdir -p /var/www
 cd /var/www
 git clone https://github.com/boulouzanacer/amkan.git
 cd amkan
-npm ci
+npm ci --workspace @amkan/web --include-workspace-root
 ```
 
-## 7. Variables d'environnement
+Si une installation précédente a été tuée, nettoyer puis relancer:
+
+```bash
+rm -rf node_modules apps/web/node_modules apps/mobile/node_modules
+npm cache clean --force
+npm ci --workspace @amkan/web --include-workspace-root
+```
+
+## 8. Variables d'environnement
 
 ```bash
 nano .env
@@ -101,7 +124,7 @@ Générer `NEXTAUTH_SECRET`:
 openssl rand -base64 32
 ```
 
-## 8. Prisma et build
+## 9. Prisma et build
 
 ```bash
 npm run db:generate
@@ -110,7 +133,7 @@ npm run db:seed
 npm run build
 ```
 
-## 9. Lancer avec PM2
+## 10. Lancer avec PM2
 
 ```bash
 npm install -g pm2
@@ -121,7 +144,7 @@ pm2 startup systemd
 
 Après `pm2 startup systemd`, exécuter la commande affichée par PM2.
 
-## 10. Nginx reverse proxy
+## 11. Nginx reverse proxy
 
 ```bash
 nano /etc/nginx/sites-available/amkan
@@ -163,12 +186,12 @@ L'application sera disponible sur:
 http://165.227.130.135
 ```
 
-## 11. Mise à jour après un nouveau push
+## 12. Mise à jour après un nouveau push
 
 ```bash
 cd /var/www/amkan
 git pull
-npm ci
+npm ci --workspace @amkan/web --include-workspace-root
 cp .env apps/web/.env.production
 npm run db:generate
 npm run db:push

@@ -154,7 +154,8 @@ Contenu:
 
 ```nginx
 server {
-    listen 80;
+    listen 80 default_server;
+    listen [::]:80 default_server;
     server_name 165.227.130.135;
 
     location / {
@@ -174,8 +175,8 @@ server {
 Activer:
 
 ```bash
-ln -s /etc/nginx/sites-available/amkan /etc/nginx/sites-enabled/amkan
 rm -f /etc/nginx/sites-enabled/default
+ln -sf /etc/nginx/sites-available/amkan /etc/nginx/sites-enabled/amkan
 nginx -t
 systemctl reload nginx
 ```
@@ -244,6 +245,52 @@ pm2 list
 pm2 logs amkan-web --lines 40
 curl -I http://127.0.0.1:3000
 pm2 save
+```
+
+## Dépannage: page Welcome to nginx
+
+Si l'IP affiche la page:
+
+```text
+Welcome to nginx!
+```
+
+Nginx sert encore le site par défaut. Remplacer la config par le proxy Amkan:
+
+```bash
+cat >/etc/nginx/sites-available/amkan <<'NGINX'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name 165.227.130.135;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+NGINX
+
+rm -f /etc/nginx/sites-enabled/default
+ln -sf /etc/nginx/sites-available/amkan /etc/nginx/sites-enabled/amkan
+nginx -t
+systemctl reload nginx
+curl -I http://165.227.130.135
+```
+
+Avant de tester l'IP publique, vérifier que Next.js répond bien derrière PM2:
+
+```bash
+curl -I http://127.0.0.1:3000
+pm2 list
+pm2 logs amkan-web --lines 40
 ```
 
 ## Dépannage: Prisma P1000 MySQL

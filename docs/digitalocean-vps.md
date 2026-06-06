@@ -200,6 +200,15 @@ npm run build
 pm2 restart amkan-web --update-env
 ```
 
+Sur le VPS web, ne lancez pas le typecheck mobile si vous avez installé uniquement `@amkan/web`. L'application mobile Expo reste dans le dépôt, mais ses dépendances ne sont pas nécessaires pour servir Next.js.
+
+Commande de vérification web uniquement:
+
+```bash
+npm run typecheck --workspace @amkan/web
+npm run build --workspace @amkan/web
+```
+
 ## Dépannage: PM2 process not found
 
 Si PM2 affiche:
@@ -291,6 +300,33 @@ Avant de tester l'IP publique, vérifier que Next.js répond bien derrière PM2:
 curl -I http://127.0.0.1:3000
 pm2 list
 pm2 logs amkan-web --lines 40
+```
+
+## Dépannage: TypeScript compile apps/mobile sur le VPS
+
+Si une commande affiche des erreurs du type:
+
+```text
+apps/mobile/app/_layout.tsx: Cannot find module 'expo-router'
+apps/mobile/tsconfig.json: File 'expo/tsconfig.base' not found
+```
+
+Vous êtes en train de compiler le workspace mobile alors que le VPS a seulement installé les dépendances web. Récupérer la dernière config et relancer uniquement le build web:
+
+```bash
+cd /var/www/amkan
+git pull
+npm ci --workspace @amkan/web --include-workspace-root
+npm run typecheck --workspace @amkan/web
+npm run build --workspace @amkan/web
+pm2 restart amkan-web --update-env
+```
+
+Si vous voulez aussi vérifier l'application mobile sur le serveur, il faut installer tous les workspaces:
+
+```bash
+npm ci
+npx tsc --noEmit -p apps/mobile/tsconfig.json
 ```
 
 ## Dépannage: Prisma P1000 MySQL

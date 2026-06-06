@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./apps/web" }
+  ],
+  "exclude": [
+    "apps/mobile",
+    "node_modules"
+  ]
+}

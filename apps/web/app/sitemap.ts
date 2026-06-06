@@ -1,9 +1,15 @@
 import type { MetadataRoute } from "next";
-import { listings } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
   const staticRoutes = ["", "/search", "/favorites", "/login", "/register", "/host/dashboard"];
+  const listings = await prisma.listing.findMany({
+    where: { isPublished: true },
+    select: { slug: true, updatedAt: true },
+    orderBy: { updatedAt: "desc" },
+    take: 500
+  }).catch(() => []);
 
   return [
     ...staticRoutes.map((route) => ({
@@ -13,8 +19,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: route === "" ? 1 : 0.7
     })),
     ...listings.map((listing) => ({
-      url: `${baseUrl}/listing/${listing.id}`,
-      lastModified: new Date(),
+      url: `${baseUrl}/listing/${listing.slug}`,
+      lastModified: listing.updatedAt,
       changeFrequency: "daily" as const,
       priority: 0.9
     }))

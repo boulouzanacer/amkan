@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/dashboard-shell";
+import { HostBookingActions } from "@/components/booking-actions";
 import { prisma } from "@/lib/prisma";
 
 const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"], ["Opérations", "/admin/operations"]];
@@ -16,7 +17,7 @@ export default async function AdminBookingsPage() {
           {bookings.map((booking) => (
             <div key={booking.id} className="flex items-center justify-between rounded-md border border-ink/10 p-4">
               <span>{booking.listing.title} · {booking.status} · {booking.payment?.method ?? "N/A"} · {Number(booking.total)} EUR</span>
-              <button className="rounded-md border border-ink/10 px-3 py-2 text-sm">Examiner</button>
+              <HostBookingActions bookingId={booking.id} />
             </div>
           ))}
           {!bookings.length ? <p className="rounded-md bg-mist p-4 text-sm text-ink/60">Aucune réservation en base.</p> : null}

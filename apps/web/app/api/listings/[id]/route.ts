@@ -6,8 +6,8 @@ import { getCurrentUser } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
-  const listing = await prisma.listing.findUnique({
-    where: { id: params.id },
+  const listing = await prisma.listing.findFirst({
+    where: { OR: [{ id: params.id }, { slug: params.id }] },
     include: { host: true, images: true, amenities: { include: { amenity: true } }, reviews: true, availability: true }
   });
 

@@ -1,14 +1,23 @@
 import Image from "next/image";
-import { categories } from "@/lib/mock-data";
 import { getListings } from "@/lib/listing-data";
 import { ListingCard } from "@/components/listing-card";
 import { SearchBar } from "@/components/search-bar";
-import { ButtonLink, SectionHeader } from "@/components/ui";
+import { ButtonLink, EmptyState, SectionHeader } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const listings = await getListings();
+  const categoryLinks = [
+    ["Maisons de plage", "/search?type=BEACH_HOUSE"],
+    ["Cabanes", "/search?type=CABIN"],
+    ["Villas", "/search?type=VILLA"],
+    ["Appartements", "/search?type=APARTMENT"],
+    ["Piscine", "/search?amenity=Piscine"],
+    ["Vue mer", "/search?amenity=Vue%20mer"],
+    ["Montagne", "/search?type=CHALET"],
+    ["Luxe", "/search?maxPrice=300"]
+  ];
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -46,9 +55,9 @@ export default async function HomePage() {
 
       <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex gap-3 overflow-x-auto pb-2">
-          {categories.map((category) => (
-            <a key={category} href={`/search?category=${encodeURIComponent(category)}`} className="whitespace-nowrap rounded-md border border-ink/10 bg-white px-4 py-3 text-sm font-medium hover:border-palm hover:text-palm">
-              {category}
+          {categoryLinks.map(([label, href]) => (
+            <a key={label} href={href} className="whitespace-nowrap rounded-md border border-ink/10 bg-white px-4 py-3 text-sm font-medium hover:border-palm hover:text-palm">
+              {label}
             </a>
           ))}
         </div>
@@ -61,6 +70,7 @@ export default async function HomePage() {
             <ListingCard key={listing.id} listing={listing} />
           ))}
         </div>
+        {!listings.length ? <EmptyState title="Aucun logement publié" body="Les logements apparaîtront ici dès que les hôtes auront publié leurs annonces." /> : null}
       </section>
 
       <section className="bg-mist py-14">

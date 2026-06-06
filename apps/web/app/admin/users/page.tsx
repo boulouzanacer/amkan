@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/dashboard-shell";
+import { AdminUserActions } from "@/components/admin-actions";
 import { prisma } from "@/lib/prisma";
 
 const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"], ["Opérations", "/admin/operations"]];
@@ -15,8 +16,8 @@ export default async function AdminUsersPage() {
         <div className="mt-5 grid gap-3">
           {users.map((user) => (
             <div key={user.id} className="flex items-center justify-between rounded-md border border-ink/10 p-4">
-              <span>{user.name} · {user.role}</span>
-              <button className="rounded-md border border-ink/10 px-3 py-2 text-sm">Désactiver</button>
+              <span>{user.name} · {user.role} · {user.isActive ? "Actif" : "Suspendu"}</span>
+              <AdminUserActions userId={user.id} isActive={user.isActive} />
             </div>
           ))}
           {!users.length ? <p className="rounded-md bg-mist p-4 text-sm text-ink/60">Aucun utilisateur en base.</p> : null}

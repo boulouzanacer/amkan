@@ -1,37 +1,58 @@
-export default function MessagesPage() {
-  return (
-    <main className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[320px_1fr] lg:px-8">
-      <aside className="rounded-md border border-ink/10 bg-white p-4">
-        <h1 className="text-xl font-semibold">Messagerie</h1>
-        {["Nora Benali", "Hôte Cabane Atlas"].map((name) => (
-          <button key={name} className="mt-3 block w-full rounded-md border border-ink/10 p-3 text-left hover:bg-mist">
-            <p className="font-medium">{name}</p>
-            <p className="text-sm text-ink/55">Nouveau message lié au logement.</p>
-          </button>
-        ))}
-      </aside>
-      <section className="rounded-md border border-ink/10 bg-white p-5">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold">Conversation temps réel</h2>
-          <span className="rounded-md bg-mist px-3 py-1 text-xs font-semibold text-palm">WebSocket prêt</span>
-        </div>
-        <div className="mt-5 grid gap-3">
-          <p className="w-fit max-w-xl rounded-md bg-mist p-3 text-sm">Bonjour, le logement est-il disponible pour une arrivée tardive ?</p>
-          <p className="ml-auto w-fit max-w-xl rounded-md bg-palm p-3 text-sm text-white">Oui, nous pouvons organiser une arrivée autonome.</p>
-        </div>
-        <form className="mt-6 flex gap-2">
-          <input placeholder="Écrire un message" className="min-h-12 flex-1 rounded-md border border-ink/10 px-4" />
-          <button className="rounded-md bg-ink px-5 font-semibold text-white">Envoyer</button>
-        </form>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {["Arrivée autonome possible", "Merci pour votre réservation", "Je vérifie la disponibilité"].map((reply) => (
-            <button key={reply} className="rounded-md border border-ink/10 px-3 py-2 text-sm">{reply}</button>
-          ))}
-          <button className="rounded-md border border-ink/10 px-3 py-2 text-sm">Ajouter image</button>
-          <button className="rounded-md border border-ink/10 px-3 py-2 text-sm">Ajouter document</button>
-          <button className="rounded-md border border-ink/10 px-3 py-2 text-sm">Traduire</button>
-        </div>
-      </section>
-    </main>
-  );
+import { EmptyState } from "@/components/ui";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { MessagesClient, type ConversationView } from "@/components/messages-client";
+
+export const dynamic = "force-dynamic";
+
+export default async function MessagesPage() {
+  const user = await getCurrentUser();
+  if (!user) {
+    return (
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <EmptyState title="Connexion requise" body="Connectez-vous pour consulter votre messagerie." />
+      </main>
+    );
+  }
+
+  const conversations = await prisma.conversation.findMany({
+    where: { OR: [{ travelerId: user.id }, { hostId: user.id }] },
+    include: {
+      listing: { select: { id: true, title: true } },
+      traveler: { select: { id: true, name: true, role: true } },
+      host: { select: { id: true, name: true, role: true } },
+      messages: {
+        include: { sender: { select: { id: true, name: true, role: true } } },
+        orderBy: { createdAt: "asc" }
+      }
+    },
+    orderBy: { updatedAt: "desc" }
+  });
+
+  const data: ConversationView[] = conversations.map((conversation) => ({
+    id: conversation.id,
+    travelerId: conversation.travelerId,
+    hostId: conversation.hostId,
+    listing: conversation.listing,
+    traveler: conversation.traveler,
+    host: conversation.host,
+    updatedAt: conversation.updatedAt.toISOString(),
+    messages: conversation.messages.map((message) => ({
+      id: message.id,
+      senderId: message.senderId,
+      body: message.body,
+      createdAt: message.createdAt.toISOString(),
+      sender: message.sender
+    }))
+  }));
+
+  if (!data.length) {
+    return (
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <EmptyState title="Aucune conversation" body="Contactez un hôte depuis une annonce ou attendez le premier message voyageur." />
+      </main>
+    );
+  }
+
+  return <MessagesClient currentUserId={user.id} conversations={data} />;
 }

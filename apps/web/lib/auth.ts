@@ -18,7 +18,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials.password) return null;
         const user = await prisma.user.findUnique({ where: { email: credentials.email } });
-        if (!user?.passwordHash) return null;
+        if (!user?.passwordHash || !user.isActive) return null;
         const valid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!valid) return null;
         return { id: user.id, email: user.email, name: user.name, image: user.image, role: user.role };
@@ -34,6 +34,11 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   callbacks: {
+    async signIn({ user }) {
+      if (!user.email) return true;
+      const dbUser = await prisma.user.findUnique({ where: { email: user.email }, select: { isActive: true } });
+      return dbUser?.isActive !== false;
+    },
     async jwt({ token, user }) {
       if (user) {
         let dbUser = user.email ? await prisma.user.findUnique({ where: { email: user.email } }) : null;
@@ -71,8 +76,8 @@ export async function getCurrentUser() {
   const userId = session?.user?.id;
   if (!userId || typeof userId !== "string") return null;
 
-  return prisma.user.findUnique({
-    where: { id: userId },
+  return prisma.user.findFirst({
+    where: { id: userId, isActive: true },
     select: { id: true, name: true, email: true, role: true, image: true }
   });
 }

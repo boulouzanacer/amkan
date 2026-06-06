@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Heart } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 
 export function FavoriteButton({ listingId, compact = false }: { listingId: string; compact?: boolean }) {
   const router = useRouter();
@@ -139,5 +139,46 @@ export function BookingForm({ listingId, price, serviceFee = 18, taxes = 12 }: {
         <p className="flex justify-between border-t border-ink/10 pt-3 font-semibold"><span>Total</span><span>{total} EUR</span></p>
       </div>
     </>
+  );
+}
+
+export function ContactHostButton({ listingId, hostName }: { listingId: string; hostName?: string }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function contact() {
+    setLoading(true);
+    setError("");
+    const response = await fetch("/api/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        listingId,
+        body: "Bonjour, je souhaite avoir plus d'informations sur ce logement."
+      })
+    });
+    setLoading(false);
+    if (response.status === 401) {
+      router.push("/login");
+      return;
+    }
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      setError(payload.error ?? "Impossible de contacter l'hôte.");
+      return;
+    }
+    router.push("/messages");
+    router.refresh();
+  }
+
+  return (
+    <div className="mt-3">
+      <button type="button" onClick={contact} disabled={loading} className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-ink/10 px-4 font-semibold hover:bg-mist disabled:opacity-60">
+        <MessageCircle className="h-4 w-4" />
+        {loading ? "Ouverture..." : `Contacter ${hostName ?? "l'hôte"}`}
+      </button>
+      {error ? <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+    </div>
   );
 }

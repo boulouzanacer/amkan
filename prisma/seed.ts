@@ -35,7 +35,7 @@ async function main() {
 
   const host = await prisma.user.upsert({
     where: { email: "host@amkan.test" },
-    update: {},
+    update: { passwordHash, isActive: true, role: Role.HOST },
     create: {
       email: "host@amkan.test",
       name: "Nora Benali",
@@ -47,14 +47,14 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: "admin@amkan.test" },
-    update: {},
-    create: { email: "admin@amkan.test", name: "Admin Amkan", passwordHash, role: Role.ADMIN }
+    update: { passwordHash, isActive: true, role: Role.ADMIN },
+    create: { email: "admin@amkan.test", name: "Admin Amkan", passwordHash, isActive: true, role: Role.ADMIN }
   });
 
-  await prisma.user.upsert({
+  const traveler = await prisma.user.upsert({
     where: { email: "traveler@amkan.test" },
-    update: {},
-    create: { email: "traveler@amkan.test", name: "Voyageur Amkan", passwordHash, role: Role.TRAVELER }
+    update: { passwordHash, isActive: true, role: Role.TRAVELER },
+    create: { email: "traveler@amkan.test", name: "Voyageur Amkan", passwordHash, isActive: true, role: Role.TRAVELER }
   });
 
   const samples = [
@@ -63,6 +63,7 @@ async function main() {
     ["Appartement Jardin Majorelle", "marrakech", "Maroc", ListingType.APARTMENT, 130, 3, 1, 2, 1],
     ["Maison de plage Safran", "bejaia", "Algérie", ListingType.BEACH_HOUSE, 180, 5, 2, 4, 2]
   ] as const;
+  let firstListingId = "";
 
   for (const [title, city, country, type, price, guests, bedrooms, beds, bathrooms] of samples) {
     const listing = await prisma.listing.upsert({
@@ -92,6 +93,7 @@ async function main() {
         }
       }
     });
+    if (!firstListingId) firstListingId = listing.id;
 
     await Promise.all(
       amenities.slice(0, 5).map((amenity) =>
@@ -102,6 +104,21 @@ async function main() {
         })
       )
     );
+  }
+
+  if (firstListingId) {
+    const conversation =
+      (await prisma.conversation.findFirst({ where: { travelerId: traveler.id, hostId: host.id, listingId: firstListingId } })) ??
+      (await prisma.conversation.create({ data: { travelerId: traveler.id, hostId: host.id, listingId: firstListingId } }));
+    const messagesCount = await prisma.message.count({ where: { conversationId: conversation.id } });
+    if (!messagesCount) {
+      await prisma.message.createMany({
+        data: [
+          { conversationId: conversation.id, senderId: traveler.id, body: "Bonjour, le logement est-il disponible pour une arrivée tardive ?" },
+          { conversationId: conversation.id, senderId: host.id, body: "Oui, nous pouvons organiser une arrivée autonome." }
+        ]
+      });
+    }
   }
 }
 

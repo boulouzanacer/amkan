@@ -6,6 +6,7 @@ import { FavoriteButton } from "@/components/marketplace-actions";
 type ListingCardProps = {
   listing: {
     id: string;
+    slug: string;
     title: string;
     city: string;
     country: string;
@@ -21,7 +22,7 @@ type ListingCardProps = {
 export function ListingCard({ listing }: ListingCardProps) {
   return (
     <article className="group overflow-hidden rounded-md border border-ink/10 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-soft">
-      <Link href={`/listing/${listing.id}`} className="block">
+      <Link href={`/listing/${listing.slug}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden bg-mist">
           <Image src={listing.image} alt={listing.title} fill className="object-cover transition duration-500 group-hover:scale-105" />
           <FavoriteButton listingId={listing.id} compact />

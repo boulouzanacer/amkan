@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Bath, BedDouble, Home, MapPinned, UsersRound, type LucideIcon } from "lucide-react";
 import { getListing } from "@/lib/listing-data";
 import { Rating } from "@/components/ui";
-import { BookingForm, FavoriteButton } from "@/components/marketplace-actions";
+import { BookingForm, ContactHostButton, FavoriteButton } from "@/components/marketplace-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +103,7 @@ export default async function ListingDetailPage({ params }: { params: { id: stri
         <aside className="h-fit rounded-md border border-ink/10 bg-white p-5 shadow-soft">
           <p className="text-2xl font-semibold">{listing.price} EUR <span className="text-sm font-normal text-ink/55">/ nuit</span></p>
           <BookingForm listingId={listing.id} price={listing.price} />
+          {listing.hostId ? <ContactHostButton listingId={listing.id} hostName={listing.hostName} /> : null}
         </aside>
       </div>
     </main>

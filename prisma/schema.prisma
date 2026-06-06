@@ -99,6 +99,7 @@ model User {
   passwordHash   String?
   image          String?
   phone          String?
+  isActive       Boolean        @default(true)
   role           Role           @default(TRAVELER)
   bio            String?        @db.Text
   listings       Listing[]      @relation("HostListings")

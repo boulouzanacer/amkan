@@ -32,9 +32,10 @@ export const bookingSchema = z.object({
 
 export const messageSchema = z.object({
   conversationId: z.string().optional(),
+  recipientId: z.string().optional(),
   senderId: z.string().optional(),
-  travelerId: z.string(),
-  hostId: z.string(),
+  travelerId: z.string().optional(),
+  hostId: z.string().optional(),
   listingId: z.string().optional(),
   body: z.string().min(1)
 });
@@ -70,7 +71,7 @@ export const favoriteCollectionSchema = z.object({
 });
 
 export const verificationSchema = z.object({
-  userId: z.string(),
+  userId: z.string().optional(),
   documents: z
     .array(
       z.object({

@@ -1,4 +1,5 @@
 import { DashboardShell } from "@/components/dashboard-shell";
+import { AdminListingActions } from "@/components/admin-actions";
 import { prisma } from "@/lib/prisma";
 
 const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"], ["Opérations", "/admin/operations"]];
@@ -15,8 +16,8 @@ export default async function AdminListingsPage() {
         <div className="mt-5 grid gap-3">
           {listings.map((listing) => (
             <div key={listing.id} className="flex items-center justify-between rounded-md border border-ink/10 p-4">
-              <span>{listing.title} · {listing.city} · {Number(listing.pricePerNight)} EUR</span>
-              <button className="rounded-md border border-ink/10 px-3 py-2 text-sm">Modérer</button>
+              <span>{listing.title} · {listing.city} · {Number(listing.pricePerNight)} EUR · {listing.isPublished ? "Publié" : "Suspendu"}</span>
+              <AdminListingActions listingId={listing.id} isPublished={listing.isPublished} />
             </div>
           ))}
           {!listings.length ? <p className="rounded-md bg-mist p-4 text-sm text-ink/60">Aucun logement en base.</p> : null}

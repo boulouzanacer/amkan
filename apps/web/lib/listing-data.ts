@@ -1,8 +1,12 @@
 import { prisma } from "@/lib/prisma";
-import { listings as mockListings } from "@/lib/mock-data";
+
+const fallbackImage = "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1200&q=80";
 
 export type ListingView = {
   id: string;
+  slug: string;
+  hostId?: string;
+  hostName?: string;
   title: string;
   city: string;
   country: string;
@@ -23,6 +27,7 @@ export type ListingView = {
 };
 
 const include = {
+  host: { select: { id: true, name: true } },
   images: { orderBy: { position: "asc" as const } },
   reviews: true,
   amenities: { include: { amenity: true } }
@@ -33,40 +38,40 @@ function avg(reviews: Array<{ rating: number }>) {
   return reviews.reduce((total, review) => total + review.rating, 0) / reviews.length;
 }
 
-export function toListingView(listing: { id: string; title: string; city: string; country: string; address: string; pricePerNight: unknown; guests: number; bedrooms: number; beds: number; bathrooms: number; type: string; description: string; houseRules: string; images: Array<{ url: string }>; reviews: Array<{ rating: number }>; amenities: Array<{ amenity: { name: string } }> }): ListingView {
+export function toListingView(listing: { id: string; slug: string; hostId?: string; host?: { id: string; name: string }; title: string; city: string; country: string; address: string; pricePerNight: unknown; guests: number; bedrooms: number; beds: number; bathrooms: number; type: string; description: string; houseRules: string; images: Array<{ url: string }>; reviews: Array<{ rating: number }>; amenities: Array<{ amenity: { name: string } }> }): ListingView {
   const gallery = listing.images.map((image) => image.url);
   return {
     id: listing.id,
+    slug: listing.slug,
+    hostId: listing.host?.id ?? listing.hostId,
+    hostName: listing.host?.name,
     title: listing.title,
     city: listing.city,
     country: listing.country,
     address: listing.address,
     price: Number(listing.pricePerNight),
-    rating: avg(listing.reviews) || 4.8,
+    rating: avg(listing.reviews),
     reviews: listing.reviews.length,
     guests: listing.guests,
     bedrooms: listing.bedrooms,
     beds: listing.beds,
     bathrooms: listing.bathrooms,
     type: listing.type.replaceAll("_", " "),
-    image: gallery[0] ?? mockListings[0].image,
-    gallery: gallery.length ? gallery : mockListings[0].gallery,
+    image: gallery[0] ?? fallbackImage,
+    gallery: gallery.length ? gallery : [fallbackImage],
     description: listing.description,
     rules: listing.houseRules,
     amenities: listing.amenities.map((item) => item.amenity.name)
   };
 }
 
-function fromMock(listing: (typeof mockListings)[number]): ListingView {
-  return { ...listing, amenities: ["Wi-Fi", "Parking", "Piscine", "Climatisation", "Cuisine"] };
-}
-
-export async function getListings(params?: { destination?: string; maxPrice?: string; type?: string; guests?: string }) {
+export async function getListings(params?: { destination?: string; maxPrice?: string; type?: string; guests?: string; amenity?: string | string[] }) {
   try {
     const destination = params?.destination;
     const maxPrice = params?.maxPrice;
     const guests = params?.guests;
     const type = params?.type;
+    const selectedAmenities = Array.isArray(params?.amenity) ? params?.amenity : params?.amenity ? [params.amenity] : [];
     const data = await prisma.listing.findMany({
       where: {
         isPublished: true,
@@ -78,27 +83,27 @@ export async function getListings(params?: { destination?: string; maxPrice?: st
                 { address: { contains: destination } }
               ]
             }
-          : {}),
+        : {}),
         ...(maxPrice ? { pricePerNight: { lte: Number(maxPrice) } } : {}),
         ...(guests ? { guests: { gte: Number(guests) } } : {}),
-        ...(type ? { type: type as never } : {})
+        ...(type ? { type: type as never } : {}),
+        ...(selectedAmenities.length ? { amenities: { some: { amenity: { name: { in: selectedAmenities } } } } } : {})
       },
       include,
       orderBy: { createdAt: "desc" },
       take: 60
     });
-    return data.length ? data.map(toListingView) : mockListings.map(fromMock);
+    return data.map(toListingView);
   } catch {
-    return mockListings.map(fromMock);
+    return [];
   }
 }
 
 export async function getListing(id: string) {
   try {
-    const listing = await prisma.listing.findUnique({ where: { id }, include });
+    const listing = await prisma.listing.findFirst({ where: { OR: [{ id }, { slug: id }] }, include });
     if (listing) return toListingView(listing);
   } catch {
   }
-  const mock = mockListings.find((item) => item.id === id);
-  return mock ? fromMock(mock) : null;
+  return null;
 }

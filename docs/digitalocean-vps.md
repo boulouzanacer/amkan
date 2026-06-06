@@ -137,7 +137,7 @@ npm run build
 
 ```bash
 npm install -g pm2
-pm2 start npm --name amkan-web -- run start -- --hostname 127.0.0.1 --port 3000
+pm2 start npm --name amkan-web --cwd /var/www/amkan -- run start -- --hostname 127.0.0.1 --port 3000
 pm2 save
 pm2 startup systemd
 ```
@@ -197,6 +197,37 @@ npm run db:generate
 npm run db:push
 npm run build
 pm2 restart amkan-web
+```
+
+## Dépannage: PM2 process not found
+
+Si PM2 affiche:
+
+```text
+[PM2][ERROR] Process or Namespace amkan-web not found
+```
+
+Le process n'existe pas encore. Lancer le premier démarrage:
+
+```bash
+cd /var/www/amkan
+pm2 start npm --name amkan-web --cwd /var/www/amkan -- run start -- --hostname 127.0.0.1 --port 3000
+pm2 list
+pm2 save
+```
+
+Si le process existe déjà et que `.env` a changé:
+
+```bash
+cp .env apps/web/.env.production
+npm run build
+pm2 restart amkan-web --update-env
+```
+
+Voir les logs:
+
+```bash
+pm2 logs amkan-web --lines 80
 ```
 
 ## Dépannage: Prisma P1000 MySQL

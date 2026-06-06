@@ -1,17 +1,15 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Bath, BedDouble, Heart, Home, MapPinned, UsersRound, type LucideIcon } from "lucide-react";
-import { amenities, listings } from "@/lib/mock-data";
+import { Bath, BedDouble, Home, MapPinned, UsersRound, type LucideIcon } from "lucide-react";
+import { getListing } from "@/lib/listing-data";
 import { Rating } from "@/components/ui";
+import { BookingForm, FavoriteButton } from "@/components/marketplace-actions";
 
-export default function ListingDetailPage({ params }: { params: { id: string } }) {
-  const listing = listings.find((item) => item.id === params.id);
+export const dynamic = "force-dynamic";
+
+export default async function ListingDetailPage({ params }: { params: { id: string } }) {
+  const listing = await getListing(params.id);
   if (!listing) notFound();
-
-  const nights = 4;
-  const subtotal = nights * listing.price;
-  const serviceFee = 38;
-  const taxes = 24;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -21,10 +19,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
           <p className="mt-2 text-ink/65">{listing.address}, {listing.city}, {listing.country}</p>
           <div className="mt-2"><Rating value={listing.rating} count={listing.reviews} /></div>
         </div>
-        <button className="inline-flex min-h-11 items-center gap-2 rounded-md border border-ink/10 px-4 font-semibold hover:bg-mist">
-          <Heart className="h-4 w-4" />
-          Ajouter aux favoris
-        </button>
+        <FavoriteButton listingId={listing.id} />
       </div>
 
       <div className="grid gap-3 md:grid-cols-[2fr_1fr]">
@@ -67,7 +62,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
           <div>
             <h2 className="text-2xl font-semibold">Équipements</h2>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {amenities.map((amenity) => (
+              {listing.amenities.map((amenity) => (
                 <span key={amenity} className="rounded-md border border-ink/10 bg-white px-4 py-3 text-sm">{amenity}</span>
               ))}
             </div>
@@ -107,18 +102,7 @@ export default function ListingDetailPage({ params }: { params: { id: string } }
 
         <aside className="h-fit rounded-md border border-ink/10 bg-white p-5 shadow-soft">
           <p className="text-2xl font-semibold">{listing.price} EUR <span className="text-sm font-normal text-ink/55">/ nuit</span></p>
-          <form className="mt-5 grid gap-3">
-            <label className="grid gap-2 text-sm font-medium">Arrivée<input type="date" className="min-h-11 rounded-md border border-ink/10 px-3" /></label>
-            <label className="grid gap-2 text-sm font-medium">Départ<input type="date" className="min-h-11 rounded-md border border-ink/10 px-3" /></label>
-            <label className="grid gap-2 text-sm font-medium">Voyageurs<input type="number" min="1" defaultValue="2" className="min-h-11 rounded-md border border-ink/10 px-3" /></label>
-            <button className="min-h-12 rounded-md bg-clay px-4 font-semibold text-white hover:bg-palm">Réserver</button>
-          </form>
-          <div className="mt-5 grid gap-2 text-sm">
-            <p className="flex justify-between"><span>{listing.price} x {nights} nuits</span><span>{subtotal} EUR</span></p>
-            <p className="flex justify-between"><span>Frais de service</span><span>{serviceFee} EUR</span></p>
-            <p className="flex justify-between"><span>Taxes</span><span>{taxes} EUR</span></p>
-            <p className="flex justify-between border-t border-ink/10 pt-3 font-semibold"><span>Total</span><span>{subtotal + serviceFee + taxes} EUR</span></p>
-          </div>
+          <BookingForm listingId={listing.id} price={listing.price} />
         </aside>
       </div>
     </main>

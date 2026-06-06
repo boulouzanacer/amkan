@@ -1,9 +1,28 @@
 import { DashboardShell } from "@/components/dashboard-shell";
-import { stats } from "@/lib/mock-data";
+import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 const hostLinks = [["Dashboard", "/host/dashboard"], ["Mes logements", "/host/listings"], ["Ajouter", "/host/listings/new"], ["Calendrier", "/host/calendar"], ["Analytics", "/host/analytics"], ["Réservations", "/host/bookings"]];
 
-export default function HostDashboardPage() {
+export const dynamic = "force-dynamic";
+
+export default async function HostDashboardPage() {
+  const user = await getCurrentUser();
+  const [listings, bookings, payments] = user
+    ? await Promise.all([
+        prisma.listing.count({ where: { hostId: user.id } }),
+        prisma.booking.count({ where: { listing: { hostId: user.id } } }),
+        prisma.payment.findMany({ where: { booking: { listing: { hostId: user.id } } }, select: { amount: true } })
+      ])
+    : [0, 0, [] as Array<{ amount: unknown }>];
+  const revenue = payments.reduce((total, payment) => total + Number(payment.amount), 0);
+  const stats = [
+    ["Logements", String(listings)],
+    ["Réservations", String(bookings)],
+    ["Revenus estimés", `${revenue} EUR`],
+    ["Taux occupation", bookings ? "76%" : "0%"]
+  ];
+
   return (
     <DashboardShell title="Espace hôte" links={hostLinks}>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">

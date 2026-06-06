@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bookingSchema } from "@/lib/validators";
+import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const userId = request.headers.get("x-user-id");
-  const role = request.headers.get("x-user-role");
+export async function GET() {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
 
   const bookings = await prisma.booking.findMany({
-    where: role === "ADMIN" ? {} : { userId: userId ?? "" },
+    where: user.role === "ADMIN" ? {} : { userId: user.id },
     include: { listing: { include: { images: true } }, payment: true },
     orderBy: { createdAt: "desc" }
   });
@@ -18,6 +19,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+
   const payload = bookingSchema.safeParse(await request.json());
   if (!payload.success) {
     return NextResponse.json({ error: "Validation failed", issues: payload.error.flatten() }, { status: 400 });
@@ -44,7 +48,7 @@ export async function POST(request: Request) {
 
   const booking = await prisma.booking.create({
     data: {
-      userId: payload.data.userId,
+      userId: user.id,
       listingId: payload.data.listingId,
       checkIn: payload.data.checkIn,
       checkOut: payload.data.checkOut,
@@ -58,6 +62,8 @@ export async function POST(request: Request) {
       payment: {
         create: {
           amount: total,
+          commission: Math.round(total * 0.12 * 100) / 100,
+          hostAmount: Math.round(total * 0.88 * 100) / 100,
           method: payload.data.method,
           status: payload.data.method === "CASH" ? "CASH_DUE" : "PENDING"
         }

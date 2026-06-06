@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { listingSchema } from "@/lib/validators";
+import { getCurrentUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -31,14 +32,17 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
+  if (user.role !== "HOST" && user.role !== "ADMIN") {
+    return NextResponse.json({ error: "Host role required" }, { status: 403 });
+  }
+
   const payload = listingSchema.safeParse(await request.json());
   if (!payload.success) {
     return NextResponse.json({ error: "Validation failed", issues: payload.error.flatten() }, { status: 400 });
-  }
-
-  const hostId = request.headers.get("x-user-id");
-  if (!hostId) {
-    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   }
 
   const slug = `${payload.data.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
@@ -46,7 +50,7 @@ export async function POST(request: Request) {
     data: {
       ...payload.data,
       slug,
-      hostId,
+      hostId: user.id,
       latitude: 36.7538,
       longitude: 3.0588,
       serviceFee: 0,

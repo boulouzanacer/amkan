@@ -23,7 +23,7 @@ export const listingSchema = z.object({
 
 export const bookingSchema = z.object({
   listingId: z.string(),
-  userId: z.string(),
+  userId: z.string().optional(),
   checkIn: z.coerce.date(),
   checkOut: z.coerce.date(),
   guests: z.coerce.number().int().positive(),
@@ -32,7 +32,7 @@ export const bookingSchema = z.object({
 
 export const messageSchema = z.object({
   conversationId: z.string().optional(),
-  senderId: z.string(),
+  senderId: z.string().optional(),
   travelerId: z.string(),
   hostId: z.string(),
   listingId: z.string().optional(),

@@ -12,15 +12,19 @@ export async function POST(request: Request) {
   }
 
   const passwordHash = await bcrypt.hash(payload.data.password, 12);
-  const user = await prisma.user.create({
-    data: {
-      name: payload.data.name,
-      email: payload.data.email,
-      passwordHash,
-      role: payload.data.role
-    },
-    select: { id: true, name: true, email: true, role: true }
-  });
+  try {
+    const user = await prisma.user.create({
+      data: {
+        name: payload.data.name,
+        email: payload.data.email,
+        passwordHash,
+        role: payload.data.role
+      },
+      select: { id: true, name: true, email: true, role: true }
+    });
 
-  return NextResponse.json(user, { status: 201 });
+    return NextResponse.json(user, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Email already exists" }, { status: 409 });
+  }
 }

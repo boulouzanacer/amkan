@@ -1,4 +1,5 @@
 import type { NextAuthOptions } from "next-auth";
+import { getServerSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import FacebookProvider from "next-auth/providers/facebook";
@@ -35,12 +36,25 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.role = "role" in user ? user.role : "TRAVELER";
+        let dbUser = user.email ? await prisma.user.findUnique({ where: { email: user.email } }) : null;
+        if (!dbUser && user.email) {
+          dbUser = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name ?? user.email.split("@")[0],
+              image: user.image,
+              role: "TRAVELER"
+            }
+          });
+        }
+        token.id = dbUser?.id ?? user.id;
+        token.role = dbUser?.role ?? ("role" in user ? user.role : "TRAVELER");
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
+        session.user.id = token.id;
         session.user.role = token.role;
       }
       return session;
@@ -51,3 +65,14 @@ export const authOptions: NextAuthOptions = {
     newUser: "/register"
   }
 };
+
+export async function getCurrentUser() {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  if (!userId || typeof userId !== "string") return null;
+
+  return prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, name: true, email: true, role: true, image: true }
+  });
+}

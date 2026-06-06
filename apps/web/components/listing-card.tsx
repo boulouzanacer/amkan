@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Heart } from "lucide-react";
 import { Rating } from "@/components/ui";
+import { FavoriteButton } from "@/components/marketplace-actions";
 
 type ListingCardProps = {
   listing: {
@@ -24,9 +24,7 @@ export function ListingCard({ listing }: ListingCardProps) {
       <Link href={`/listing/${listing.id}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden bg-mist">
           <Image src={listing.image} alt={listing.title} fill className="object-cover transition duration-500 group-hover:scale-105" />
-          <button aria-label="Ajouter aux favoris" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-md bg-white/90 text-ink shadow-sm">
-            <Heart className="h-4 w-4" />
-          </button>
+          <FavoriteButton listingId={listing.id} compact />
         </div>
         <div className="space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">

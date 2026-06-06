@@ -1,10 +1,14 @@
 import Image from "next/image";
-import { categories, listings } from "@/lib/mock-data";
+import { categories } from "@/lib/mock-data";
+import { getListings } from "@/lib/listing-data";
 import { ListingCard } from "@/components/listing-card";
 import { SearchBar } from "@/components/search-bar";
 import { ButtonLink, SectionHeader } from "@/components/ui";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const listings = await getListings();
   const schema = {
     "@context": "https://schema.org",
     "@type": "WebSite",

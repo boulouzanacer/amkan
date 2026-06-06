@@ -1,9 +1,24 @@
 import { DashboardShell } from "@/components/dashboard-shell";
-import { stats } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
 const links = [["Dashboard", "/admin"], ["Utilisateurs", "/admin/users"], ["Logements", "/admin/listings"], ["Réservations", "/admin/bookings"], ["Opérations", "/admin/operations"]];
 
-export default function AdminPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminPage() {
+  const [users, listings, bookings, revenue] = await Promise.all([
+    prisma.user.count().catch(() => 0),
+    prisma.listing.count().catch(() => 0),
+    prisma.booking.count().catch(() => 0),
+    prisma.payment.aggregate({ _sum: { amount: true } }).catch(() => ({ _sum: { amount: 0 } }))
+  ]);
+  const stats = [
+    ["Utilisateurs", String(users)],
+    ["Logements", String(listings)],
+    ["Réservations", String(bookings)],
+    ["Chiffre d'affaires", `${Number(revenue._sum.amount ?? 0)} EUR`]
+  ];
+
   return (
     <DashboardShell title="Administration" links={links}>
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">

@@ -1,8 +1,12 @@
 import { Filter, MapPinned, Search, SlidersHorizontal } from "lucide-react";
 import { ListingCard } from "@/components/listing-card";
-import { listings, amenities } from "@/lib/mock-data";
+import { amenities } from "@/lib/mock-data";
+import { getListings } from "@/lib/listing-data";
 
-export default function SearchPage() {
+export const dynamic = "force-dynamic";
+
+export default async function SearchPage({ searchParams }: { searchParams: { destination?: string; maxPrice?: string; guests?: string; type?: string } }) {
+  const listings = await getListings(searchParams);
   return (
     <main className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[320px_1fr] lg:px-8">
       <aside className="h-fit rounded-md border border-ink/10 bg-white p-5">

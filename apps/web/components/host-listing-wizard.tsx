@@ -3,14 +3,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Check, CircleAlert, Sparkles, Wand2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { buildSeoSuggestions, suggestPrice } from "@/lib/premium-data";
 
 type WizardData = {
   title: string;
   city: string;
   country: string;
+  address: string;
   category: string;
   guests: string;
+  bedrooms: string;
+  beds: string;
+  bathrooms: string;
   price: string;
   description: string;
   videoUrl: string;
@@ -26,8 +31,12 @@ const initialData: WizardData = {
   title: "",
   city: "",
   country: "",
+  address: "",
   category: "Villa",
   guests: "2",
+  bedrooms: "1",
+  beds: "1",
+  bathrooms: "1",
   price: "",
   description: "",
   videoUrl: "",
@@ -41,13 +50,16 @@ const initialData: WizardData = {
 
 const steps = ["Base", "Description IA", "Tarification", "Visite", "Guide", "Aperçu"];
 
-const requiredFields: Array<keyof WizardData> = ["title", "city", "country", "guests", "price", "description", "arrival"];
+const requiredFields: Array<keyof WizardData> = ["title", "city", "country", "address", "guests", "bedrooms", "beds", "bathrooms", "price", "description"];
 
 export function HostListingWizard() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [mode, setMode] = useState<"draft" | "ready">("draft");
   const [data, setData] = useState<WizardData>(initialData);
   const [savedAt, setSavedAt] = useState<string>("");
+  const [publishError, setPublishError] = useState("");
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("amkan.listingDraft");
@@ -90,6 +102,55 @@ export function HostListingWizard() {
       "description",
       `${title} à ${city} offre un séjour fluide et confortable avec espaces lumineux, arrivée simple, équipements essentiels et emplacement pratique pour découvrir les meilleures adresses locales.`
     );
+  }
+
+  function listingType() {
+    const value = data.category.toLowerCase();
+    if (value.includes("cabane")) return "CABIN";
+    if (value.includes("appartement")) return "APARTMENT";
+    if (value.includes("chalet")) return "CHALET";
+    if (value.includes("chambre")) return "ROOM";
+    if (value.includes("plage")) return "BEACH_HOUSE";
+    return "VILLA";
+  }
+
+  async function publish() {
+    setPublishError("");
+    if (missing.length) {
+      setPublishError("Complétez les champs obligatoires avant publication.");
+      return;
+    }
+    setPublishing(true);
+    const response = await fetch("/api/listings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: data.title,
+        description: data.description,
+        address: data.address,
+        city: data.city,
+        country: data.country,
+        pricePerNight: Number(data.price),
+        type: listingType(),
+        guests: Number(data.guests),
+        bedrooms: Number(data.bedrooms),
+        beds: Number(data.beds),
+        bathrooms: Number(data.bathrooms)
+      })
+    });
+    setPublishing(false);
+    if (response.status === 401) {
+      router.push("/login");
+      return;
+    }
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      setPublishError(body.error ?? "Publication impossible.");
+      return;
+    }
+    const listing = await response.json();
+    router.push(`/listing/${listing.id}`);
+    router.refresh();
   }
 
   return (
@@ -136,10 +197,14 @@ export function HostListingWizard() {
             <div className="grid gap-4 md:grid-cols-2">
               {[
                 ["title", "Titre"],
+                ["address", "Adresse"],
                 ["city", "Ville"],
                 ["country", "Pays"],
                 ["category", "Catégorie"],
-                ["guests", "Capacité voyageurs"]
+                ["guests", "Capacité voyageurs"],
+                ["bedrooms", "Chambres"],
+                ["beds", "Lits"],
+                ["bathrooms", "Salles de bain"]
               ].map(([field, label]) => (
                 <label key={field} className="grid gap-2 text-sm font-medium">
                   {label}
@@ -229,9 +294,18 @@ export function HostListingWizard() {
           <button type="button" disabled={step === 0} onClick={() => setStep((value) => Math.max(0, value - 1))} className="rounded-md border border-ink/10 px-4 py-2 text-sm font-semibold disabled:opacity-40">
             Retour
           </button>
-          <button type="button" onClick={() => setStep((value) => Math.min(steps.length - 1, value + 1))} className="rounded-md bg-palm px-4 py-2 text-sm font-semibold text-white">
-            Continuer
-          </button>
+          <div className="flex items-center gap-2">
+            {publishError ? <span className="text-sm text-red-700">{publishError}</span> : null}
+            {step === steps.length - 1 ? (
+              <button type="button" onClick={publish} disabled={publishing} className="rounded-md bg-clay px-4 py-2 text-sm font-semibold text-white disabled:opacity-60">
+                {publishing ? "Publication..." : "Publier le logement"}
+              </button>
+            ) : (
+              <button type="button" onClick={() => setStep((value) => Math.min(steps.length - 1, value + 1))} className="rounded-md bg-palm px-4 py-2 text-sm font-semibold text-white">
+                Continuer
+              </button>
+            )}
+          </div>
         </div>
       </section>
 
